@@ -432,3 +432,79 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+//====solution for lab3 q1====
+
+void 
+vmprinthelper(pagetable_t pagetable, int level){
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V){
+      for(int j = 0; j < level; j++){
+        printf("..");
+      }
+      printf("%d: pte %p pa %p\n", i, pte, PTE2PA(pte));
+      if(level < 2){
+        vmprinthelper((pagetable_t)PTE2PA(pte), level+1);
+      }
+    }
+  }
+}
+
+void 
+vmprint(pagetable_t pagetable){
+  printf("page table %p\n", pagetable);
+  vmprinthelper(pagetable,1);
+}
+
+//====solution for lab3 q2====
+
+void
+kvmmapkern(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, int perm)
+{
+  mappages(pagetable, va, sz, pa, perm);
+
+}
+
+pagetable_t
+kvmcreate()
+{
+  pagetable_t pagetable;
+  int i;
+
+  pagetable = uvmcreate();
+  for(i=0;i<512;i++){
+    pagetable[i] = kernel_pagetable[i];
+  }
+
+  // uart registers
+  kvmmapkern(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+
+  // virtio mmio disk interface
+  kvmmapkern(pagetable, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
+  // CLINT
+  kvmmapkern(pagetable, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+
+  // PLIC
+  kvmmapkern(pagetable, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+
+  return pagetable;
+}
+
+void
+kvmfree(pagetable_t pagetable, uint64 sz)
+{
+  pte_t pte = pagetable[0];
+  pagetable_t level1 = (pagetable_t) PTE2PA(pte);
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = level1[i];
+    if (pte & PTE_V) {
+      uint64 level2 = PTE2PA(pte);
+      kfree((void *) level2);
+      level1[i] = 0;
+    }
+  }
+  kfree((void *) level1);
+  kfree((void *) pagetable);
+}

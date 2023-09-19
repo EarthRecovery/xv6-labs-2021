@@ -134,6 +134,9 @@ found:
     release(&p->lock);
     return 0;
   }
+  //====solution for lab3 tbpgl q2====
+  // p->kpagetable = kvmcreate();
+  //====end solution====
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -157,6 +160,10 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  //====solution for lab3 tbpgl q2====
+  // if(p->kpagetable)
+  //   kvmfree(p->kpagetable, 0);
+  //====end solution====
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -457,11 +464,23 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+
+        //====solution for lab3 tbpgl q2====
+        // switch to process's kernel page table
+        // w_satp(MAKE_SATP(p->kpagetable));
+        // sfence_vma();
+        //====end solution====
+
         swtch(&c->context, &p->context);
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
+
+        // ======= solution for pgtbl ---- part 2 ========
+        // switch to scheduler's kernel page table
+        // kvminithart();
+        // ===============================================
       }
       release(&p->lock);
     }
