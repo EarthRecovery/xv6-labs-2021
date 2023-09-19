@@ -45,3 +45,19 @@ You will need a RISC-V "newlib" tool chain from
 https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
 riscv64-softmmu. Once they are installed, and in your shell
 search path, you can run "make qemu".
+
+## user的调用程序
+1. 首先，在user文件夹中建立xxx.c
+2. 在Makefile中添加xxx.c
+3. 在user.h加入函数头
+4. 在usys.S中加入系统调用号
+5. 在syscall.c中加入系统调用函数
+6. 在syscall.h中加入函数头
+7. 在defs.h 加入工具函数头
+
+## 系统调用全流程
+user/user.h:		用户态程序调用跳板函数 trace()
+user/usys.S:		跳板函数 trace() 使用 CPU 提供的 ecall 指令，调用到内核态
+kernel/syscall.c	到达内核态统一系统调用处理函数 syscall()，所有系统调用都会跳到这里来处理。
+kernel/syscall.c	syscall() 根据跳板传进来的系统调用编号，查询 syscalls[] 表，找到对应的内核函数并调用。
+kernel/sysproc.c	到达 sys_trace() 函数，执行具体内核操作

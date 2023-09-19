@@ -196,6 +196,10 @@ UPROGS=\
   	$U/_helloworld\
   	$U/_sleep\
 	$U/_pingpong\
+	$U/_primes\
+	$U/_find\
+	$U/_trace\
+	$U/_sysinfotest\
 
 
 ifeq ($(LAB),$(filter $(LAB), pgtbl lock))
